@@ -20,19 +20,21 @@ esac
 adb shell killall rsync
 
 # Push rsync
-adb push rsync.bin /data/rsync
-adb shell chmod +x /data/rsync
+# NOTE: /data/local/tmp/ is accessible by "shell" user, /data/ is root only:
+adb push rsync.bin /data/local/tmp/rsync
+adb shell chmod +x /data/local/tmp/rsync
 
 # Create rsyncd.conf
-echo -e "address = $rsync_ip\nport = $port\n[root]\npath = $android_path_rsync\nuse chroot = false\nread only = false\nuid = 0\ngid = 0" > rsyncd.conf
-adb push rsyncd.conf /data/rsyncd.conf
+# NOTE: removed uid and gid from default conf
+# must run rsync from client with --no-perms to avoid preserving UID/GID when copying
+echo -e "address = $rsync_ip\nport = $port\n[root]\npath = $android_path_rsync\nuse chroot = false\nread only = false" > rsyncd.conf
+adb push rsyncd.conf /data/local/tmp/rsyncd.conf
 
 # Start rsync daemon on the device
-adb shell '/data/rsync --daemon --config=/data/rsyncd.conf &'
+adb shell '/data/local/tmp/rsync --daemon --config=/data/local/tmp/rsyncd.conf &'
 adb forward tcp:6010 tcp:1873
 
-# Where there is SElinux enabled (enforcing), we need to allow those ports
-if [ getenforce ]; then
-	sudo semanage port -a -t rsync_port_t -p tcp 6010
-	sudo semanage port -a -t rsync_port_t -p tcp 1873
-fi
+# then run like this:
+# NOTE: no --archive, but uses --times and --recursive to get what we want:
+#
+# rsync -vP --times --recursive --no-perms --stats ~/y/books/ rsync://localhost:6010/root/sdcard/Books/
