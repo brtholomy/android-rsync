@@ -30,6 +30,8 @@ adb shell chmod +x /data/local/tmp/rsync
 echo -e "address = $rsync_ip\nport = $port\n[root]\npath = $android_path_rsync\nuse chroot = false\nread only = false" > rsyncd.conf
 adb push rsyncd.conf /data/local/tmp/rsyncd.conf
 
+################
+# NOTE: start here for repeat uses:
 # Start rsync daemon on the device
 adb shell '/data/local/tmp/rsync --daemon --config=/data/local/tmp/rsyncd.conf &'
 adb forward tcp:6010 tcp:1873
@@ -37,4 +39,4 @@ adb forward tcp:6010 tcp:1873
 # then run like this:
 # NOTE: no --archive, but uses --times and --recursive to get what we want:
 #
-# rsync -vP --times --recursive --no-perms --stats ~/y/books/ rsync://localhost:6010/root/sdcard/Books/
+# rsync -vP --times --recursive --delete-after --no-perms --stats ~/y/books/ rsync://localhost:6010/root/sdcard/Books/
